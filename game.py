@@ -14,6 +14,8 @@ import pygame
 COLOR_PLATFORM = (255, 160, 0)  # #ffa000
 COLOR_PORTAL_NEXT = (43, 234, 255)  # #2beaff
 COLOR_PORTAL_PREV = (52, 235, 255)  # #34ebff
+COLOR_EXIT = (46, 204, 113)  # 出口高亮
+COLOR_EXIT_BORDER = (25, 140, 80)
 COLOR_BG = (245, 248, 252)
 COLOR_TEXT = (30, 35, 45)
 
@@ -59,71 +61,80 @@ class Level:
     portal_prev: pygame.Rect | None
     spawn: Tuple[float, float]
     world_width: int = SCREEN_W + 400
+    """最后一关到达此处即通关；与 portal_next 二选一（最后一关无 portal_next）。"""
+    exit_rect: pygame.Rect | None = None
+
+
+NUM_LEVELS = 10
+
+
+def _plat(x: int, y: int, w: int, h: int) -> pygame.Rect:
+    return pygame.Rect(x, y, w, h)
+
+
+def build_level(level_index: int, total: int) -> Level:
+    """
+    程序化生成关卡：多段地面 + 可调空隙；难度随 level_index 略升。
+    最后一关右侧为绿色「出口」；其余关右侧为青色「下一关」。
+    """
+    ground_h = 40
+    py = SCREEN_H - ground_h
+    is_final = level_index == total - 1
+
+    # 空隙与段宽：确定性变化，避免随机不可复现
+    gap = min(142, 108 + level_index * 3 + (level_index % 3) * 5)
+    n_parts = 3 + (level_index % 4)
+    widths: List[int] = []
+    for j in range(n_parts):
+        base = 240 + (level_index * 17 + j * 41) % 180
+        widths.append(base)
+
+    platforms: List[pygame.Rect] = []
+    x = -100
+    for j in range(n_parts):
+        w = widths[j]
+        platforms.append(_plat(x, py, w, ground_h))
+        if j < n_parts - 1:
+            x += w + gap
+
+    right_edge = x + widths[-1]
+
+    # 中后期加一段空中落脚台（不盖住整段空隙，避免顶头）
+    if level_index >= 3:
+        mid = -100 + widths[0] + gap // 2 - 45
+        platforms.append(_plat(mid, py - 72, min(100, gap + 40), 14))
+
+    if level_index >= 6:
+        hop = -100 + widths[0] + gap + widths[1] // 2 - 40
+        platforms.append(_plat(hop, py - 55, 72, 12))
+
+    # 出口 / 传送门贴最后一块地面前缘，避免「看得到但跳不到」
+    portal_next: pygame.Rect | None = None
+    exit_rect: pygame.Rect | None = None
+    if is_final:
+        exit_rect = pygame.Rect(right_edge - 35, py - 135, 82, 135)
+    else:
+        portal_next = pygame.Rect(right_edge - 25, py - 120, 52, 120)
+
+    world_width = max(SCREEN_W + 180, right_edge + 140)
+
+    portal_prev = pygame.Rect(10, py - 120, 50, 120) if level_index > 0 else None
+
+    name = f"第 {level_index + 1} 关" + (" — 出口" if is_final else "")
+
+    return Level(
+        name=name,
+        platforms=platforms,
+        portal_next=portal_next,
+        portal_prev=portal_prev,
+        spawn=(80.0, float(py - 80)),
+        world_width=world_width,
+        exit_rect=exit_rect,
+    )
 
 
 def make_levels() -> List[Level]:
-    """三关：平台 + 空隙；右侧青色进下一关，左侧进上一关。"""
-    ground_h = 40
-    py = SCREEN_H - ground_h
-
-    def plat(x: int, y: int, w: int, h: int) -> pygame.Rect:
-        return pygame.Rect(x, y, w, h)
-
-    # 关卡 1：学习跳跃
-    lv1_platforms = [
-        plat(0, py, 320, ground_h),
-        plat(400, py - 0, 280, ground_h),
-        plat(760, py, SCREEN_W - 760 + 200, ground_h),
-    ]
-    lv1 = Level(
-        "第 1 关",
-        lv1_platforms,
-        portal_next=pygame.Rect(SCREEN_W - 70, py - 120, 50, 120),
-        portal_prev=None,
-        spawn=(80.0, float(py - 80)),
-        world_width=SCREEN_W + 200,
-    )
-
-    # 关卡 2：空隙宽度 = gap（第一块右缘到第二块左缘）。
-    # 原先第二块 x 写成 300+gap，但第一块只到 x=200，实际空隙变成 220px，
-    # 且悬浮平台盖在 (300~420) 上空，跳跃顶点会顶到板底掉进坑里 —— 已修正。
-    gap = 130
-    p1_right = -100 + 300
-    p2_left = p1_right + gap
-    p2_w, p3_w = 400, 500
-    p3_left = p2_left + p2_w + gap
-    lv2_platforms = [
-        plat(-100, py, 300, ground_h),
-        plat(p2_left, py, p2_w, ground_h),
-        plat(p3_left, py, p3_w, ground_h),
-        # 第二段地面上的小凸起（不挡空隙上方的跳跃弧线）
-        plat(p2_left + 140, py - 14, 70, 14),
-    ]
-    lv2 = Level(
-        "第 2 关",
-        lv2_platforms,
-        portal_next=pygame.Rect(SCREEN_W - 70, py - 120, 50, 120),
-        portal_prev=pygame.Rect(10, py - 120, 50, 120),
-        spawn=(80.0, float(py - 80)),
-        world_width=max(1600, p3_left + p3_w + 120),
-    )
-
-    # 关卡 3：终点
-    lv3_platforms = [
-        plat(0, py, 220, ground_h),
-        plat(300, py - 80, 100, 20),
-        plat(480, py, SCREEN_W - 480 + 100, ground_h),
-    ]
-    lv3 = Level(
-        "第 3 关 — 终点",
-        lv3_platforms,
-        portal_next=None,
-        portal_prev=pygame.Rect(10, py - 120, 50, 120),
-        spawn=(80.0, float(py - 80)),
-        world_width=SCREEN_W + 200,
-    )
-
-    return [lv1, lv2, lv3]
+    return [build_level(i, NUM_LEVELS) for i in range(NUM_LEVELS)]
 
 
 class Player:
@@ -177,6 +188,7 @@ class Game:
         self.level_index = 0
         self.player = Player(*self.levels[0].spawn)
         self.cam_x = 0.0
+        self.won = False
 
     def current_level(self) -> Level:
         return self.levels[self.level_index]
@@ -248,6 +260,8 @@ class Game:
         self.player.vx = self.player.vy = 0.0
 
     def check_portals(self) -> None:
+        if self.won:
+            return
         lv = self.current_level()
         body = self.player.rect_at(self.player.x, self.player.y).to_pygame()
         if lv.portal_next and body.colliderect(lv.portal_next) and self.level_index < len(self.levels) - 1:
@@ -261,7 +275,25 @@ class Game:
             self.player.x, self.player.y = sp[0], sp[1]
             self.player.vx = self.player.vy = 0.0
 
+    def check_exit(self) -> None:
+        if self.won:
+            return
+        lv = self.current_level()
+        if lv.exit_rect is None:
+            return
+        body = self.player.rect_at(self.player.x, self.player.y).to_pygame()
+        if body.colliderect(lv.exit_rect):
+            self.won = True
+
+    def restart_full_game(self) -> None:
+        self.won = False
+        self.level_index = 0
+        self.player = Player(*self.levels[0].spawn)
+        self.cam_x = 0.0
+
     def handle_input(self) -> None:
+        if self.won:
+            return
         keys = pygame.key.get_pressed()
         p = self.player
         acc = 2.1
@@ -305,12 +337,23 @@ class Game:
             t = self.font_small.render("返回", True, (0, 60, 80))
             surf.blit(t, (r.x + 5, r.y + 40))
 
+        if lv.exit_rect:
+            r = pygame.Rect(lv.exit_rect.x - cx, lv.exit_rect.y, lv.exit_rect.w, lv.exit_rect.h)
+            pygame.draw.rect(surf, COLOR_EXIT, r)
+            pygame.draw.rect(surf, COLOR_EXIT_BORDER, r, 3)
+            t1 = self.font.render("出口", True, (20, 90, 50))
+            t2 = self.font_small.render("走进这里通关", True, (15, 70, 40))
+            surf.blit(t1, (r.x + 12, r.y + 28))
+            surf.blit(t2, (r.x + 4, r.y + 62))
+
         self.player.draw(surf, cx)
 
-        title = self.font.render(self.current_level().name, True, COLOR_TEXT)
+        prog = f"{self.level_index + 1} / {len(self.levels)}"
+        title = self.font.render(f"{self.current_level().name}  ({prog})", True, COLOR_TEXT)
         surf.blit(title, (12, 10))
         hint = self.font_small.render(
-            "←→ 移动  上/空格 跳跃  Tab 切换造型（□ ● — △）  R 重开本关",
+            "←→ 移动  上/空格 跳跃  Tab 切换造型  R 重开本关"
+            + ("  Enter 通关后再玩" if self.won else ""),
             True,
             (100, 105, 115),
         )
@@ -318,6 +361,18 @@ class Game:
         shape_names = {"SQUARE": "方形", "CIRCLE": "圆形", "LINE": "短线", "TRIANGLE": "三角"}
         st = self.font_small.render(f"造型: {shape_names[self.player.shape.name]}", True, COLOR_TEXT)
         surf.blit(st, (12, SCREEN_H - 28))
+
+        if self.won:
+            ov = pygame.Surface((SCREEN_W, SCREEN_H), pygame.SRCALPHA)
+            ov.fill((255, 255, 255, 160))
+            surf.blit(ov, (0, 0))
+            big = pygame.font.SysFont("microsoftyahei", 42, bold=True)
+            msg = big.render("通关！", True, (25, 120, 65))
+            mr = msg.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2 - 28))
+            surf.blit(msg, mr)
+            sub = self.font.render("Enter 再玩一局    Esc 退出", True, COLOR_TEXT)
+            sr = sub.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2 + 28))
+            surf.blit(sub, sr)
 
     def run(self) -> None:
         while True:
@@ -329,14 +384,18 @@ class Game:
                     if event.key == pygame.K_ESCAPE:
                         pygame.quit()
                         sys.exit(0)
-                    if event.key == pygame.K_TAB:
+                    if self.won and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                        self.restart_full_game()
+                    if event.key == pygame.K_TAB and not self.won:
                         self.cycle_shape()
-                    if event.key == pygame.K_r:
+                    if event.key == pygame.K_r and not self.won:
                         self.respawn()
 
-            self.handle_input()
-            self.move_and_collide()
-            self.check_portals()
+            if not self.won:
+                self.handle_input()
+                self.move_and_collide()
+                self.check_portals()
+                self.check_exit()
             self.update_camera()
             self.draw_level()
             pygame.display.flip()
