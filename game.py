@@ -65,7 +65,7 @@ class Level:
     exit_rect: pygame.Rect | None = None
 
 
-NUM_LEVELS = 10
+NUM_LEVELS = 20
 
 
 def _plat(x: int, y: int, w: int, h: int) -> pygame.Rect:
@@ -74,60 +74,432 @@ def _plat(x: int, y: int, w: int, h: int) -> pygame.Rect:
 
 def build_level(level_index: int, total: int) -> Level:
     """
-    程序化生成关卡：多段地面 + 可调空隙；难度随 level_index 略升。
-    最后一关右侧为绿色「出口」；其余关右侧为青色「下一关」。
+    构建复杂关卡：多层平台、阶梯、垂直挑战。
+    初始位置在左边中间高处，玩家自然下落。
     """
     ground_h = 40
     py = SCREEN_H - ground_h
     is_final = level_index == total - 1
 
-    # 空隙与段宽：确定性变化，避免随机不可复现
-    gap = min(142, 108 + level_index * 3 + (level_index % 3) * 5)
-    n_parts = 3 + (level_index % 4)
-    widths: List[int] = []
-    for j in range(n_parts):
-        base = 240 + (level_index * 17 + j * 41) % 180
-        widths.append(base)
-
     platforms: List[pygame.Rect] = []
-    x = -100
-    for j in range(n_parts):
-        w = widths[j]
-        platforms.append(_plat(x, py, w, ground_h))
-        if j < n_parts - 1:
-            x += w + gap
 
-    right_edge = x + widths[-1]
+    # 基础地面（起始区域）
+    platforms.append(_plat(-100, py, 200, ground_h))
 
-    # 中后期加一段空中落脚台（不盖住整段空隙，避免顶头）
-    if level_index >= 3:
-        mid = -100 + widths[0] + gap // 2 - 45
-        platforms.append(_plat(mid, py - 72, min(100, gap + 40), 14))
+    # 根据关卡索引生成不同复杂度的地图
+    if level_index == 0:
+        # 第1关：简单的双层平台，引导玩家下落
+        # 起始平台在最左侧
+        platforms.append(_plat(100, py - 150, 150, 20))  # 起始高处平台
+        platforms.append(_plat(280, py - 100, 120, 20))   # 下降台阶
+        platforms.append(_plat(450, py - 180, 100, 20))   # 更高平台
+        platforms.append(_plat(600, py - 120, 150, 20))   # 中间平台
+        platforms.append(_plat(800, py - 200, 100, 20))   # 高层小平台
+        platforms.append(_plat(950, py - 80, 200, ground_h))  # 终点地面
+        right_edge = 1150
 
-    if level_index >= 6:
-        hop = -100 + widths[0] + gap + widths[1] // 2 - 40
-        platforms.append(_plat(hop, py - 55, 72, 12))
+    elif level_index == 1:
+        # 第2关：阶梯式上升
+        platforms.append(_plat(120, py - 200, 100, 20))
+        platforms.append(_plat(280, py - 280, 80, 20))
+        platforms.append(_plat(420, py - 200, 100, 20))
+        platforms.append(_plat(580, py - 320, 80, 20))
+        platforms.append(_plat(720, py - 240, 100, 20))
+        platforms.append(_plat(880, py - 360, 80, 20))
+        platforms.append(_plat(1050, py - 150, 150, 20))
+        platforms.append(_plat(1250, py - 80, 200, ground_h))
+        right_edge = 1450
 
-    # 出口 / 传送门贴最后一块地面前缘，避免「看得到但跳不到」
+    elif level_index == 2:
+        # 第3关：垂直迷宫
+        platforms.append(_plat(100, py - 180, 80, 20))
+        platforms.append(_plat(250, py - 280, 80, 20))
+        platforms.append(_plat(400, py - 150, 60, 20))
+        platforms.append(_plat(520, py - 350, 80, 20))
+        platforms.append(_plat(680, py - 220, 60, 20))
+        platforms.append(_plat(820, py - 400, 100, 20))
+        platforms.append(_plat(1000, py - 300, 80, 20))
+        platforms.append(_plat(1150, py - 200, 100, 20))
+        platforms.append(_plat(1350, py - 80, 200, ground_h))
+        right_edge = 1550
+
+    elif level_index == 3:
+        # 第4关：多层通道
+        platforms.append(_plat(100, py - 120, 200, 20))
+        platforms.append(_plat(350, py - 250, 100, 20))
+        platforms.append(_plat(500, py - 180, 60, 20))
+        platforms.append(_plat(650, py - 320, 120, 20))
+        platforms.append(_plat(480, py - 400, 100, 20))  # 上层返回
+        platforms.append(_plat(300, py - 320, 80, 20))   # 上层
+        platforms.append(_plat(850, py - 200, 80, 20))
+        platforms.append(_plat(1000, py - 350, 100, 20))
+        platforms.append(_plat(1200, py - 150, 150, 20))
+        platforms.append(_plat(1450, py - 80, 250, ground_h))
+        right_edge = 1700
+
+    elif level_index == 4:
+        # 第5关：狭窄通道挑战
+        platforms.append(_plat(80, py - 160, 60, 20))
+        platforms.append(_plat(200, py - 100, 40, 20))
+        platforms.append(_plat(300, py - 220, 50, 20))
+        platforms.append(_plat(400, py - 180, 30, 20))
+        platforms.append(_plat(500, py - 300, 60, 20))
+        platforms.append(_plat(630, py - 240, 40, 20))
+        platforms.append(_plat(750, py - 380, 80, 20))
+        platforms.append(_plat(900, py - 300, 50, 20))
+        platforms.append(_plat(1050, py - 200, 60, 20))
+        platforms.append(_plat(1200, py - 280, 100, 20))
+        platforms.append(_plat(1400, py - 150, 120, 20))
+        platforms.append(_plat(1600, py - 80, 200, ground_h))
+        right_edge = 1800
+
+    elif level_index == 5:
+        # 第6关：长距离跳跃
+        platforms.append(_plat(100, py - 200, 100, 20))
+        platforms.append(_plat(350, py - 250, 80, 20))
+        platforms.append(_plat(600, py - 300, 80, 20))
+        platforms.append(_plat(850, py - 200, 60, 20))
+        platforms.append(_plat(1100, py - 350, 100, 20))
+        platforms.append(_plat(1350, py - 250, 80, 20))
+        platforms.append(_plat(1550, py - 150, 100, 20))
+        platforms.append(_plat(1750, py - 280, 120, 20))
+        platforms.append(_plat(2000, py - 80, 250, ground_h))
+        right_edge = 2250
+
+    elif level_index == 6:
+        # 第7关：上下穿梭
+        platforms.append(_plat(100, py - 300, 120, 20))
+        platforms.append(_plat(300, py - 150, 80, 20))
+        platforms.append(_plat(450, py - 400, 100, 20))
+        platforms.append(_plat(600, py - 200, 60, 20))
+        platforms.append(_plat(750, py - 350, 80, 20))
+        platforms.append(_plat(550, py - 100, 100, 20))  # 下降
+        platforms.append(_plat(900, py - 250, 60, 20))
+        platforms.append(_plat(1100, py - 400, 120, 20))
+        platforms.append(_plat(1300, py - 200, 80, 20))
+        platforms.append(_plat(1500, py - 320, 100, 20))
+        platforms.append(_plat(1700, py - 80, 300, ground_h))
+        right_edge = 2000
+
+    elif level_index == 7:
+        # 第8关：复杂立体结构
+        platforms.append(_plat(80, py - 250, 100, 20))
+        platforms.append(_plat(250, py - 150, 60, 20))
+        platforms.append(_plat(380, py - 350, 80, 20))
+        platforms.append(_plat(520, py - 200, 100, 20))
+        platforms.append(_plat(320, py - 450, 120, 20))   # 高层
+        platforms.append(_plat(550, py - 400, 60, 20))
+        platforms.append(_plat(700, py - 300, 80, 20))
+        platforms.append(_plat(880, py - 450, 100, 20))
+        platforms.append(_plat(1100, py - 350, 80, 20))
+        platforms.append(_plat(1300, py - 250, 100, 20))
+        platforms.append(_plat(1500, py - 400, 120, 20))
+        platforms.append(_plat(1700, py - 200, 150, 20))
+        platforms.append(_plat(1950, py - 80, 300, ground_h))
+        right_edge = 2250
+
+    elif level_index == 8:
+        # 第9关：极难挑战
+        platforms.append(_plat(60, py - 200, 50, 20))
+        platforms.append(_plat(180, py - 350, 60, 20))
+        platforms.append(_plat(320, py - 280, 40, 20))
+        platforms.append(_plat(450, py - 400, 70, 20))
+        platforms.append(_plat(600, py - 180, 50, 20))
+        platforms.append(_plat(720, py - 320, 60, 20))
+        platforms.append(_plat(860, py - 250, 40, 20))
+        platforms.append(_plat(1000, py - 420, 80, 20))
+        platforms.append(_plat(1150, py - 300, 50, 20))
+        platforms.append(_plat(1300, py - 450, 100, 20))
+        platforms.append(_plat(1500, py - 350, 60, 20))
+        platforms.append(_plat(1680, py - 200, 80, 20))
+        platforms.append(_plat(1850, py - 320, 100, 20))
+        platforms.append(_plat(2050, py - 150, 120, 20))
+        platforms.append(_plat(2250, py - 80, 300, ground_h))
+        right_edge = 2550
+
+    elif level_index == 9:
+        # 第10关：螺旋上升
+        platforms.append(_plat(100, py - 250, 100, 20))
+        platforms.append(_plat(250, py - 350, 80, 20))
+        platforms.append(_plat(400, py - 420, 100, 20))
+        platforms.append(_plat(580, py - 350, 80, 20))
+        platforms.append(_plat(720, py - 280, 100, 20))
+        platforms.append(_plat(600, py - 180, 80, 20))   # 内圈回落
+        platforms.append(_plat(450, py - 120, 100, 20))
+        platforms.append(_plat(850, py - 400, 120, 20))
+        platforms.append(_plat(1050, py - 480, 100, 20))
+        platforms.append(_plat(1250, py - 400, 80, 20))
+        platforms.append(_plat(1450, py - 300, 100, 20))
+        platforms.append(_plat(1680, py - 380, 120, 20))
+        platforms.append(_plat(1900, py - 250, 150, 20))
+        platforms.append(_plat(2150, py - 450, 200, 20))
+        platforms.append(_plat(2450, py - 200, 200, 20))
+        platforms.append(_plat(2700, py - 80, 300, ground_h))
+        right_edge = 3000
+
+    elif level_index == 10:
+        # 第11关：回字形迷宫
+        platforms.append(_plat(100, py - 200, 80, 20))
+        platforms.append(_plat(250, py - 320, 100, 20))
+        platforms.append(_plat(420, py - 400, 80, 20))
+        platforms.append(_plat(580, py - 320, 100, 20))
+        platforms.append(_plat(720, py - 200, 80, 20))
+        platforms.append(_plat(580, py - 150, 80, 20))   # 下层回绕
+        platforms.append(_plat(400, py - 100, 100, 20))
+        platforms.append(_plat(850, py - 450, 120, 20))
+        platforms.append(_plat(1050, py - 350, 80, 20))
+        platforms.append(_plat(1220, py - 450, 100, 20))
+        platforms.append(_plat(1400, py - 280, 80, 20))
+        platforms.append(_plat(1580, py - 400, 100, 20))
+        platforms.append(_plat(1780, py - 250, 120, 20))
+        platforms.append(_plat(2000, py - 500, 150, 20))
+        platforms.append(_plat(2250, py - 350, 100, 20))
+        platforms.append(_plat(2450, py - 180, 150, 20))
+        platforms.append(_plat(2700, py - 80, 300, ground_h))
+        right_edge = 3000
+
+    elif level_index == 11:
+        # 第12关：连续跳跃挑战
+        platforms.append(_plat(80, py - 180, 40, 20))
+        platforms.append(_plat(180, py - 280, 40, 20))
+        platforms.append(_plat(280, py - 380, 40, 20))
+        platforms.append(_plat(380, py - 320, 40, 20))
+        platforms.append(_plat(480, py - 420, 40, 20))
+        platforms.append(_plat(580, py - 350, 40, 20))
+        platforms.append(_plat(680, py - 250, 40, 20))
+        platforms.append(_plat(780, py - 450, 40, 20))
+        platforms.append(_plat(880, py - 380, 40, 20))
+        platforms.append(_plat(980, py - 480, 40, 20))
+        platforms.append(_plat(1100, py - 320, 60, 20))
+        platforms.append(_plat(1250, py - 420, 50, 20))
+        platforms.append(_plat(1400, py - 280, 80, 20))
+        platforms.append(_plat(1580, py - 450, 60, 20))
+        platforms.append(_plat(1750, py - 350, 100, 20))
+        platforms.append(_plat(1950, py - 480, 120, 20))
+        platforms.append(_plat(2150, py - 200, 150, 20))
+        platforms.append(_plat(2400, py - 80, 300, ground_h))
+        right_edge = 2700
+
+    elif level_index == 12:
+        # 第13关：高塔攀登
+        platforms.append(_plat(100, py - 200, 100, 20))
+        platforms.append(_plat(120, py - 350, 60, 20))
+        platforms.append(_plat(140, py - 500, 40, 20))
+        platforms.append(_plat(300, py - 450, 80, 20))
+        platforms.append(_plat(320, py - 300, 60, 20))
+        platforms.append(_plat(500, py - 550, 100, 20))
+        platforms.append(_plat(520, py - 400, 60, 20))
+        platforms.append(_plat(700, py - 480, 80, 20))
+        platforms.append(_plat(880, py - 520, 100, 20))
+        platforms.append(_plat(900, py - 380, 60, 20))
+        platforms.append(_plat(920, py - 250, 40, 20))
+        platforms.append(_plat(1100, py - 450, 120, 20))
+        platforms.append(_plat(1300, py - 550, 150, 20))
+        platforms.append(_plat(1550, py - 400, 100, 20))
+        platforms.append(_plat(1750, py - 500, 120, 20))
+        platforms.append(_plat(1950, py - 300, 150, 20))
+        platforms.append(_plat(2200, py - 450, 200, 20))
+        platforms.append(_plat(2500, py - 200, 250, ground_h))
+        right_edge = 2750
+
+    elif level_index == 13:
+        # 第14关：波浪式前进
+        platforms.append(_plat(100, py - 200, 80, 20))
+        platforms.append(_plat(250, py - 300, 80, 20))
+        platforms.append(_plat(400, py - 200, 80, 20))
+        platforms.append(_plat(550, py - 350, 80, 20))
+        platforms.append(_plat(700, py - 250, 80, 20))
+        platforms.append(_plat(850, py - 400, 80, 20))
+        platforms.append(_plat(1000, py - 300, 80, 20))
+        platforms.append(_plat(1150, py - 450, 80, 20))
+        platforms.append(_plat(1300, py - 350, 80, 20))
+        platforms.append(_plat(1450, py - 500, 80, 20))
+        platforms.append(_plat(1600, py - 400, 80, 20))
+        platforms.append(_plat(1750, py - 320, 80, 20))
+        platforms.append(_plat(1900, py - 480, 100, 20))
+        platforms.append(_plat(2100, py - 380, 100, 20))
+        platforms.append(_plat(2300, py - 280, 100, 20))
+        platforms.append(_plat(2500, py - 450, 120, 20))
+        platforms.append(_plat(2750, py - 250, 150, 20))
+        platforms.append(_plat(3000, py - 80, 300, ground_h))
+        right_edge = 3300
+
+    elif level_index == 14:
+        # 第15关：交错陷阱
+        platforms.append(_plat(100, py - 250, 50, 20))
+        platforms.append(_plat(200, py - 150, 50, 20))
+        platforms.append(_plat(300, py - 350, 50, 20))
+        platforms.append(_plat(400, py - 200, 50, 20))
+        platforms.append(_plat(500, py - 400, 50, 20))
+        platforms.append(_plat(600, py - 280, 50, 20))
+        platforms.append(_plat(700, py - 450, 50, 20))
+        platforms.append(_plat(800, py - 320, 50, 20))
+        platforms.append(_plat(900, py - 500, 50, 20))
+        platforms.append(_plat(1050, py - 380, 80, 20))
+        platforms.append(_plat(1200, py - 220, 60, 20))
+        platforms.append(_plat(1350, py - 480, 100, 20))
+        platforms.append(_plat(1550, py - 300, 80, 20))
+        platforms.append(_plat(1750, py - 450, 100, 20))
+        platforms.append(_plat(1950, py - 180, 120, 20))
+        platforms.append(_plat(2150, py - 520, 150, 20))
+        platforms.append(_plat(2400, py - 350, 100, 20))
+        platforms.append(_plat(2600, py - 80, 300, ground_h))
+        right_edge = 2900
+
+    elif level_index == 15:
+        # 第16关：悬崖边缘
+        platforms.append(_plat(60, py - 300, 80, 20))
+        platforms.append(_plat(200, py - 420, 60, 20))
+        platforms.append(_plat(350, py - 200, 40, 20))
+        platforms.append(_plat(450, py - 480, 50, 20))
+        platforms.append(_plat(600, py - 250, 40, 20))
+        platforms.append(_plat(700, py - 520, 60, 20))
+        platforms.append(_plat(850, py - 180, 40, 20))
+        platforms.append(_plat(950, py - 450, 50, 20))
+        platforms.append(_plat(1100, py - 320, 40, 20))
+        platforms.append(_plat(1200, py - 550, 80, 20))
+        platforms.append(_plat(1400, py - 400, 100, 20))
+        platforms.append(_plat(1600, py - 280, 60, 20))
+        platforms.append(_plat(1750, py - 500, 80, 20))
+        platforms.append(_plat(1950, py - 200, 100, 20))
+        platforms.append(_plat(2150, py - 420, 120, 20))
+        platforms.append(_plat(2400, py - 320, 150, 20))
+        platforms.append(_plat(2650, py - 480, 150, 20))
+        platforms.append(_plat(2900, py - 80, 300, ground_h))
+        right_edge = 3200
+
+    elif level_index == 16:
+        # 第17关：狭窄高台
+        platforms.append(_plat(80, py - 200, 30, 20))
+        platforms.append(_plat(180, py - 320, 30, 20))
+        platforms.append(_plat(280, py - 440, 30, 20))
+        platforms.append(_plat(380, py - 360, 30, 20))
+        platforms.append(_plat(480, py - 280, 30, 20))
+        platforms.append(_plat(580, py - 480, 30, 20))
+        platforms.append(_plat(700, py - 400, 30, 20))
+        platforms.append(_plat(820, py - 320, 30, 20))
+        platforms.append(_plat(940, py - 520, 30, 20))
+        platforms.append(_plat(1080, py - 440, 40, 20))
+        platforms.append(_plat(1220, py - 280, 40, 20))
+        platforms.append(_plat(1380, py - 550, 60, 20))
+        platforms.append(_plat(1580, py - 380, 50, 20))
+        platforms.append(_plat(1780, py - 480, 80, 20))
+        platforms.append(_plat(2000, py - 250, 100, 20))
+        platforms.append(_plat(2250, py - 520, 150, 20))
+        platforms.append(_plat(2500, py - 350, 120, 20))
+        platforms.append(_plat(2750, py - 80, 300, ground_h))
+        right_edge = 3050
+
+    elif level_index == 17:
+        # 第18关：双向路径
+        platforms.append(_plat(100, py - 200, 100, 20))
+        platforms.append(_plat(150, py - 400, 50, 20))   # 上层分支
+        platforms.append(_plat(350, py - 350, 80, 20))
+        platforms.append(_plat(300, py - 150, 50, 20))     # 下层分支
+        platforms.append(_plat(500, py - 450, 60, 20))
+        platforms.append(_plat(480, py - 250, 50, 20))
+        platforms.append(_plat(650, py - 380, 80, 20))
+        platforms.append(_plat(620, py - 180, 60, 20))
+        platforms.append(_plat(850, py - 500, 100, 20))
+        platforms.append(_plat(800, py - 300, 80, 20))
+        platforms.append(_plat(1050, py - 420, 60, 20))
+        platforms.append(_plat(1000, py - 220, 60, 20))
+        platforms.append(_plat(1250, py - 480, 100, 20))
+        platforms.append(_plat(1200, py - 320, 80, 20))
+        platforms.append(_plat(1450, py - 550, 120, 20))
+        platforms.append(_plat(1400, py - 380, 100, 20))
+        platforms.append(_plat(1650, py - 250, 80, 20))
+        platforms.append(_plat(1850, py - 480, 150, 20))
+        platforms.append(_plat(2100, py - 320, 120, 20))
+        platforms.append(_plat(2350, py - 80, 300, ground_h))
+        right_edge = 2650
+
+    elif level_index == 18:
+        # 第19关：极限挑战
+        platforms.append(_plat(50, py - 180, 25, 20))
+        platforms.append(_plat(130, py - 320, 25, 20))
+        platforms.append(_plat(210, py - 450, 25, 20))
+        platforms.append(_plat(290, py - 280, 25, 20))
+        platforms.append(_plat(370, py - 520, 25, 20))
+        platforms.append(_plat(460, py - 380, 25, 20))
+        platforms.append(_plat(550, py - 200, 25, 20))
+        platforms.append(_plat(640, py - 480, 25, 20))
+        platforms.append(_plat(730, py - 320, 25, 20))
+        platforms.append(_plat(820, py - 550, 30, 20))
+        platforms.append(_plat(920, py - 420, 30, 20))
+        platforms.append(_plat(1030, py - 250, 30, 20))
+        platforms.append(_plat(1150, py - 480, 40, 20))
+        platforms.append(_plat(1280, py - 350, 40, 20))
+        platforms.append(_plat(1420, py - 580, 60, 20))
+        platforms.append(_plat(1600, py - 450, 50, 20))
+        platforms.append(_plat(1800, py - 300, 80, 20))
+        platforms.append(_plat(2020, py - 550, 100, 20))
+        platforms.append(_plat(2250, py - 400, 120, 20))
+        platforms.append(_plat(2500, py - 200, 150, 20))
+        platforms.append(_plat(2750, py - 480, 180, 20))
+        platforms.append(_plat(3000, py - 80, 350, ground_h))
+        right_edge = 3350
+
+    else:
+        # 第20关：终极试炼
+        platforms.append(_plat(80, py - 300, 80, 20))
+        platforms.append(_plat(120, py - 500, 40, 20))
+        platforms.append(_plat(250, py - 400, 60, 20))
+        platforms.append(_plat(380, py - 550, 50, 20))
+        platforms.append(_plat(500, py - 350, 40, 20))
+        platforms.append(_plat(600, py - 580, 60, 20))
+        platforms.append(_plat(720, py - 450, 40, 20))
+        platforms.append(_plat(820, py - 250, 30, 20))
+        platforms.append(_plat(920, py - 500, 50, 20))
+        platforms.append(_plat(1050, py - 380, 40, 20))
+        platforms.append(_plat(1150, py - 600, 70, 20))
+        platforms.append(_plat(1280, py - 480, 40, 20))
+        platforms.append(_plat(1380, py - 320, 30, 20))
+        platforms.append(_plat(1480, py - 550, 60, 20))
+        platforms.append(_plat(1650, py - 420, 80, 20))
+        platforms.append(_plat(1800, py - 620, 100, 20))
+        platforms.append(_plat(1980, py - 350, 60, 20))
+        platforms.append(_plat(2120, py - 580, 80, 20))
+        platforms.append(_plat(2300, py - 450, 100, 20))
+        platforms.append(_plat(2500, py - 650, 120, 20))
+        platforms.append(_plat(2750, py - 300, 150, 20))
+        platforms.append(_plat(3000, py - 550, 200, 20))
+        platforms.append(_plat(3300, py - 180, 250, ground_h))
+        right_edge = 3550
+
+    # 出口 / 传送门
     portal_next: pygame.Rect | None = None
     exit_rect: pygame.Rect | None = None
     if is_final:
-        exit_rect = pygame.Rect(right_edge - 35, py - 135, 82, 135)
+        exit_rect = pygame.Rect(right_edge - 60, py - 150, 90, 150)
     else:
-        portal_next = pygame.Rect(right_edge - 25, py - 120, 52, 120)
+        portal_next = pygame.Rect(right_edge - 40, py - 140, 60, 140)
 
-    world_width = max(SCREEN_W + 180, right_edge + 140)
+    world_width = max(SCREEN_W + 200, right_edge + 180)
 
-    portal_prev = pygame.Rect(10, py - 120, 50, 120) if level_index > 0 else None
+    portal_prev = pygame.Rect(20, py - 140, 50, 140) if level_index > 0 else None
 
     name = f"第 {level_index + 1} 关" + (" — 出口" if is_final else "")
+
+    # 初始出生点：左边中间高处，自由下落
+    # 根据关卡难度调整出生高度
+    if level_index < 3:
+        spawn_y = py - 350
+    elif level_index < 7:
+        spawn_y = py - 450
+    elif level_index < 12:
+        spawn_y = py - 500
+    elif level_index < 17:
+        spawn_y = py - 550
+    else:
+        spawn_y = py - 600
 
     return Level(
         name=name,
         platforms=platforms,
         portal_next=portal_next,
         portal_prev=portal_prev,
-        spawn=(80.0, float(py - 80)),
+        spawn=(150.0, float(spawn_y)),
         world_width=world_width,
         exit_rect=exit_rect,
     )
