@@ -1,0 +1,155 @@
+:root {
+  color-scheme: light dark;
+  --bg: #0c1118;
+  --bg-soft: #131b24;
+  --line: #253241;
+  --text: #e8eff8;
+  --muted: #a3b3c5;
+  --primary: #3bc4ff;
+  --accent: #66dd88;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  background: radial-gradient(circle at top, #162433 0%, var(--bg) 65%);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.container {
+  width: min(1120px, calc(100% - 2rem));
+  margin: 0 auto;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.site-header {
+  border-bottom: 1px solid var(--line);
+  padding: 2.5rem 0 2rem;
+}
+
+.site-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.6rem, 2.6vw, 2.4rem);
+}
+
+.site-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #26b8f6, #5ce4a0);
+  color: #0a1018;
+}
+
+.panel {
+  margin: 2rem 0 2.2rem;
+  background: color-mix(in srgb, var(--bg-soft) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem 1rem 1.2rem;
+}
+
+.panel h2 {
+  margin: 0.2rem 0 0.6rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.repo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.9rem;
+}
+
+.repo-card {
+  border: 1px solid var(--line);
+  background: rgba(16, 23, 31, 0.85);
+  border-radius: 12px;
+  padding: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.repo-card h3 {
+  margin: 0;
+  font-size: 1.04rem;
+}
+
+.repo-card p {
+  margin: 0;
+  color: var(--muted);
+  min-height: 2.8em;
+}
+
+.repo-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #b7ccde;
+}
+
+.site-footer {
+  border-top: 1px solid var(--line);
+  padding: 1rem 0 1.2rem;
+  color: var(--muted);
+}
+
+.site-footer .container {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.play-page {
+  padding-bottom: 2rem;
+}
+
+.play-wrap {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0a1017;
+}
+
+#game-root {
+  width: 100%;
+  min-height: 540px;
+}
+
+.play-hint {
+  margin-top: 0.8rem;
+  color: var(--muted);
+  line-height: 1.55;
+}

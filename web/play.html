@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>block 在线试玩 | zrh.asia</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="play-page">
+    <header class="site-header">
+      <div class="container row">
+        <div>
+          <h1>block 在线试玩</h1>
+          <p>基于原仓库玩法复刻：移动、跳跃、机关、金币、隐藏关。</p>
+        </div>
+        <a class="btn btn-primary" href="/">返回主页</a>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="play-wrap">
+        <div id="game-root"></div>
+      </section>
+      <p class="play-hint">
+        操作：A/D 或 左右移动，W/空格跳跃（支持连跳），Shift 冲刺，Tab 切换造型，R 重生。<br />
+        机关：尖刺致死、风车碰撞致死、蓝水减速、黑水加速、传送门瞬移、塌陷平台会恢复。收集足够金币将解锁隐藏关。
+      </p>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+    <script src="/play.js"></script>
+  </body>
+</html>
