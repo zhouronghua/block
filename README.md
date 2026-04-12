@@ -3,6 +3,7 @@
 本仓库已扩展为网站工程，目标是将域名 `zrh.asia` 指向当前站点，并提供两类内容：
 
 - `zhouronghua` 公开仓库主要软件展示（自动抓取 GitHub API）
+- 历史博客内容展示（来自 `zhouronghua.github.io` 的 `_posts`）
 - `block` 游戏网页试玩（Phaser 版本，浏览器直接运行）
 
 同时保留原始桌面版 `game.py`（Python + pygame）作为参考实现。
@@ -77,7 +78,7 @@ make restart
 
 - 自动抓取用户公开仓库并筛选 Top 项目
 - 过滤 fork、归档仓库
-- 按 `Star + 最近更新时间` 排序
+- 按“全分支最近一次代码提交时间”降序排序（不是仅看 `main/master`）
 - 缓存写入 `build/cache/repos.json`，默认 20 分钟
 
 支持参数：
@@ -85,7 +86,15 @@ make restart
 - `limit`：返回数量（1~30）
 - `fresh=1`：跳过缓存强制刷新
 
-## 5) block 在线试玩功能
+## 5) 博客内容展示
+
+后端接口：`/api/blog-posts`
+
+- 读取 `web/content/blog/*.markdown`
+- 解析 Jekyll front matter（标题、日期、分类）
+- 首页展示最新文章摘要
+
+## 6) block 在线试玩功能
 
 页面：`/play.html`
 
@@ -99,7 +108,7 @@ make restart
 - 金币收集与隐藏关解锁
 - 关卡切换与摄像机跟随
 
-## 6) 运维命令
+## 7) 运维命令
 
 ```bash
 make up      # 构建并启动
@@ -108,7 +117,7 @@ make restart # 重启容器
 make logs    # 查看日志
 ```
 
-## 7) 原始桌面版运行（可选）
+## 8) 原始桌面版运行（可选）
 
 如果要运行原始 pygame 版本：
 

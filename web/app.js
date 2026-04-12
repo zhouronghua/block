@@ -1,5 +1,7 @@
 const repoListEl = document.getElementById("repo-list");
 const repoMetaEl = document.getElementById("repo-meta");
+const blogListEl = document.getElementById("blog-list");
+const blogMetaEl = document.getElementById("blog-meta");
 
 function fmtDate(iso) {
   const d = new Date(iso);
@@ -18,8 +20,22 @@ function renderRepoCard(repo) {
       <span>Star ${repo.stargazers_count}</span>
     </div>
     <div class="repo-meta">
-      <span>更新 ${fmtDate(repo.pushed_at)}</span>
+      <span>代码更新 ${fmtDate(repo.code_updated_at || repo.pushed_at)}</span>
       <span>Fork ${repo.forks_count}</span>
+    </div>
+  `;
+  return card;
+}
+
+function renderBlogCard(post) {
+  const card = document.createElement("article");
+  card.className = "repo-card";
+  card.innerHTML = `
+    <h3>${post.title}</h3>
+    <p>${post.excerpt || "暂无摘要"}</p>
+    <div class="repo-meta">
+      <span>发布 ${fmtDate(post.date)}</span>
+      <span>${post.categories || "未分类"}</span>
     </div>
   `;
   return card;
@@ -41,4 +57,24 @@ async function loadRepos() {
   }
 }
 
+async function loadBlogPosts() {
+  if (!blogListEl || !blogMetaEl) {
+    return;
+  }
+  try {
+    const resp = await fetch("/api/blog-posts?limit=6");
+    const data = await resp.json();
+    if (!resp.ok) {
+      throw new Error(data.error || "加载博客失败");
+    }
+    blogMetaEl.textContent = `数据来源: ${data.source} | 生成时间: ${fmtDate(data.generated_at)} | 共 ${data.items.length} 篇`;
+    blogListEl.innerHTML = "";
+    data.items.forEach((post) => blogListEl.appendChild(renderBlogCard(post)));
+  } catch (err) {
+    blogMetaEl.textContent = `加载失败: ${err instanceof Error ? err.message : String(err)}`;
+    blogListEl.innerHTML = "";
+  }
+}
+
 loadRepos();
+loadBlogPosts();
