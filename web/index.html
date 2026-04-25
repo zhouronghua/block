@@ -19,27 +19,56 @@
 
     <main class="container">
       <section class="panel">
-        <h2>开源组件（按最后代码更新时间）</h2>
-        <p id="repo-meta" class="muted">正在加载仓库列表...</p>
-        <div id="repo-list" class="repo-grid"></div>
-      </section>
-
-      <section class="panel">
         <h2>Gitee 精选项目</h2>
         <div class="repo-grid">
-          <article class="repo-card gitee-card">
+          <article class="repo-card gitee-card code-agent-detail">
             <h3><a href="https://gitee.com/zhouronghua/code-agent" target="_blank" rel="noopener noreferrer">code-agent</a></h3>
-            <p>基于VS Code架构的AI编码代理CLI工具，支持多LLM提供商与Cursor兼容的Skills系统，单文件分发零依赖。</p>
+            <p class="tagline">AI Coding Agent CLI - 基于 VS Code 架构的代码代理工具</p>
+
+            <div class="detail-section">
+              <h4>核心特性</h4>
+              <ul>
+                <li><strong>多模式工作流</strong>：Agent（全自主执行）、Plan（实现规划）、Ask（只读问答）</li>
+                <li><strong>多 LLM 提供商</strong>：OpenAI、Anthropic、Ollama、DeepSeek 等兼容 API</li>
+                <li><strong>YAML 配置管理</strong>：支持多 profiles，告别环境变量管理混乱</li>
+                <li><strong>Cursor 兼容 Skills</strong>：自动加载 SKILL.md 和 .mdc 规则扩展能力</li>
+                <li><strong>并行任务执行</strong>：同时运行多个独立任务</li>
+                <li><strong>流式实时输出</strong>：Token 级实时响应显示</li>
+                <li><strong>单文件分发</strong>：44KB 压缩包，零运行时依赖</li>
+              </ul>
+            </div>
+
+            <div class="detail-section">
+              <h4>快速开始</h4>
+              <pre class="code-block"># 安装
+npm install -g https://github.com/zhouronghua/code-agent/releases/latest/download/code-agent-0.2.4.tgz
+
+# 配置（填入你的 API Key）
+mkdir -p ~/.codeagent
+cp $(npm root -g)/code-agent/config.template.yaml ~/.codeagent/config.yaml
+
+# 使用示例
+code-agent "写一个 Python Hello World"
+code-agent --mode plan "设计 REST API"
+code-agent --mode ask "解释项目结构"</pre>
+            </div>
+
             <div class="repo-meta">
-              <span>TypeScript</span>
-              <span>多模式(Agent/Plan/Ask)</span>
+              <span>TypeScript / Node.js</span>
+              <span>MIT License</span>
             </div>
             <div class="repo-meta">
-              <span>来源: gitee.com</span>
-              <span>支持OpenAI/Anthropic/Ollama等</span>
+              <span>来源: gitee.com/zhouronghua/code-agent</span>
+              <span>esbuild 单文件打包</span>
             </div>
           </article>
         </div>
+      </section>
+
+      <section class="panel">
+        <h2>开源组件（按最后代码更新时间）</h2>
+        <p id="repo-meta" class="muted">正在加载仓库列表...</p>
+        <div id="repo-list" class="repo-grid"></div>
       </section>
 
       <section class="panel">

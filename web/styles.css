@@ -91,6 +91,11 @@ a {
   gap: 0.9rem;
 }
 
+/* 包含详细卡片的网格单列布局 */
+.repo-grid:has(.code-agent-detail) {
+  grid-template-columns: 1fr;
+}
+
 .repo-card {
   border: 1px solid var(--line);
   background: rgba(16, 23, 31, 0.85);
@@ -117,6 +122,67 @@ a {
   justify-content: space-between;
   font-size: 0.9rem;
   color: #b7ccde;
+}
+
+/* Code Agent 详细卡片样式 */
+.code-agent-detail {
+  grid-column: 1 / -1;
+  max-width: 100%;
+}
+
+.code-agent-detail .tagline {
+  color: var(--accent);
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+  font-weight: 500;
+}
+
+.code-agent-detail .detail-section {
+  margin: 0.8rem 0;
+}
+
+.code-agent-detail .detail-section h4 {
+  margin: 0 0 0.4rem;
+  color: var(--primary);
+  font-size: 0.95rem;
+}
+
+.code-agent-detail .detail-section ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.code-agent-detail .detail-section li {
+  margin: 0.2rem 0;
+}
+
+.code-agent-detail .code-block {
+  background: #0d1219;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #c9d6e3;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.code-agent-detail .code-block code {
+  background: rgba(59, 196, 255, 0.15);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  color: var(--primary);
+}
+
+.code-agent-detail > .repo-meta {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
 }
 
 .site-footer {
