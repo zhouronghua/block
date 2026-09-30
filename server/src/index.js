@@ -3,8 +3,10 @@
 const express = require("express");
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const leaderboard = require("./leaderboard.js");
 
 const app = express();
+app.use(express.json({ limit: "8kb" }));
 
 const PORT = Number(process.env.PORT || 3000);
 const GITHUB_USER = process.env.GITHUB_USER || "zhouronghua";
@@ -16,6 +18,8 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 const REPO_ENRICH_CONCURRENCY = Math.max(1, Number(process.env.REPO_ENRICH_CONCURRENCY || 3));
 const BRANCH_SCAN_LIMIT = Math.max(1, Number(process.env.BRANCH_SCAN_LIMIT || 30));
 const BRANCH_ENRICH_CONCURRENCY = Math.max(1, Number(process.env.BRANCH_ENRICH_CONCURRENCY || 4));
+const GAME_RATE_WINDOW_MS = Number(process.env.GAME_RATE_WINDOW_MS || 60000);
+const GAME_RATE_MAX = Math.max(1, Number(process.env.GAME_RATE_MAX || 60));
 
 const cacheDir = path.resolve(process.cwd(), "build", "cache");
 const cacheFile = path.join(cacheDir, "repos.json");
@@ -33,6 +37,28 @@ function safeNumber(value, fallback = 0) {
 function toIsoOrEmpty(value) {
   const d = new Date(value || 0);
   return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+}
+
+const rateHits = new Map();
+
+// 轻量内存限流：防止客户端刷榜（重启后计数清零，仅用于兜底）
+function checkRate(key, max, windowMs) {
+  const now = Date.now();
+  let hits = (rateHits.get(key) || []).filter((ts) => now - ts < windowMs);
+  if (hits.length >= max) {
+    rateHits.set(key, hits);
+    return false;
+  }
+  hits.push(now);
+  rateHits.set(key, hits);
+  if (rateHits.size > 5000) {
+    rateHits.clear();
+  }
+  return true;
+}
+
+function clientKey(req) {
+  return String(req.headers["x-forwarded-for"] || req.ip || "unknown").split(",")[0].trim();
 }
 
 function githubHeaders() {
@@ -346,6 +372,78 @@ app.get("/api/blog-posts", async (req, res) => {
       error: "Failed to load blog posts.",
       detail: error instanceof Error ? error.message : String(error)
     });
+  }
+});
+
+// ---- block 小游戏积分榜 ----
+
+// 用微信登录 code 换取稳定用户 ID（未配置 appid/secret 时返回空，客户端退化为本地 ID）
+app.post("/api/game/login", async (req, res) => {
+  if (!checkRate(`login:${clientKey(req)}`, GAME_RATE_MAX, GAME_RATE_WINDOW_MS)) {
+    res.status(429).json({ error: "Too many requests." });
+    return;
+  }
+  try {
+    const code = typeof req.body?.code === "string" ? req.body.code.slice(0, 128) : "";
+    const result = await leaderboard.loginWithCode(code);
+    res.json({
+      ok: true,
+      user_id: result.user_id || "",
+      source: result.source,
+      generated_at: isoNow()
+    });
+  } catch (error) {
+    console.error(`[${isoNow()}] /api/game/login failed`, error);
+    res.status(500).json({ error: "Login failed." });
+  }
+});
+
+app.post("/api/game/score", async (req, res) => {
+  if (!checkRate(`score:${clientKey(req)}`, GAME_RATE_MAX, GAME_RATE_WINDOW_MS)) {
+    res.status(429).json({ error: "Too many requests." });
+    return;
+  }
+  try {
+    const body = req.body || {};
+    const score = Math.floor(Number(body.score));
+    if (!leaderboard.isValidUserId(body.user_id)) {
+      res.status(400).json({ error: "Invalid user_id." });
+      return;
+    }
+    if (!Number.isFinite(score) || score < 0 || score > 9999999) {
+      res.status(400).json({ error: "Invalid score." });
+      return;
+    }
+    const result = await leaderboard.submitScore({
+      user_id: body.user_id,
+      nickname: leaderboard.cleanText(body.nickname, 24),
+      avatar_url: leaderboard.cleanText(body.avatar_url, 300),
+      score,
+      coins: Math.max(0, Math.min(99999, Math.floor(Number(body.coins) || 0))),
+      level_index: Math.max(0, Math.min(99, Math.floor(Number(body.level_index) || 0))),
+      duration_ms: Math.max(0, Math.min(86400000, Math.floor(Number(body.duration_ms) || 0))),
+      run_id: leaderboard.cleanText(body.run_id, 40)
+    });
+    res.json(Object.assign({ generated_at: isoNow() }, result));
+  } catch (error) {
+    console.error(`[${isoNow()}] /api/game/score failed`, error);
+    res.status(error.status || 500).json({
+      error: "Failed to submit score.",
+      detail: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+app.get("/api/game/leaderboard", async (req, res) => {
+  try {
+    const data = await leaderboard.getLeaderboard({
+      limit: req.query.limit,
+      userId: typeof req.query.user_id === "string" ? req.query.user_id.slice(0, 64) : ""
+    });
+    res.json(Object.assign({ generated_at: isoNow() }, data));
+  } catch (error) {
+    console.error(`[${isoNow()}] /api/game/leaderboard failed`, error);
+    res.status(500).json({ error: "Failed to load leaderboard." });
   }
 });
 

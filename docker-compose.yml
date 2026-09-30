@@ -9,6 +9,9 @@ services:
       - GITHUB_USER=zhouronghua
       - REPO_CACHE_MINUTES=20
       - TOP_REPO_LIMIT=10
+      # 微信小游戏登录：填写小游戏的 AppID / AppSecret 后，才能用 openid 作为排行榜用户ID
+      - WX_APPID=${WX_APPID:-}
+      - WX_APPSECRET=${WX_APPSECRET:-}
     volumes:
       - ./build:/app/build
 

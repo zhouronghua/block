@@ -28,6 +28,17 @@ block/
 │   ├── play.html
 │   ├── play.js
 │   └── styles.css
+├── minigame/                # 微信小游戏（触摸屏版 + 积分排行榜）
+│   ├── game.js
+│   ├── game.json
+│   ├── project.config.json
+│   └── js/
+├── server/
+│   ├── Dockerfile
+│   ├── package.json
+│   └── src/
+│       ├── index.js
+│       └── leaderboard.js    # 小游戏积分榜存储与排名
 ├── game.py
 ├── requirements.txt
 └── Makefile
@@ -108,7 +119,40 @@ make restart
 - 金币收集与隐藏关解锁
 - 关卡切换与摄像机跟随
 
-## 7) 运维命令
+## 7) 微信小游戏与积分排行榜
+
+工程目录：`minigame/`，由 `web/play.js`（Phaser 版）移植为原生 Canvas 实现，横屏触摸操作，
+积分提交到本站后端。
+
+- 首页：显示用户 ID、昵称、最高分、排行榜 Top 5
+- 游戏：左下方向键移动，右下「跳」（二段跳）与「冲」，右上切换造型/重生，左上退出结算
+- 结算：展示本局积分明细，并自动提交到 zrh.asia
+- 排行榜：Top 10 + 我的排名
+
+积分规则：`金币×100 + 通关×500 + 隐藏关 1500 + 速度奖励 max(0, 3000−秒数×5) − 死亡×30`。
+
+后端接口（数据保存于 `build/game/scores.json`）：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | `/api/game/login` | 用微信 `code` 换 openid，作为排行榜用户 ID |
+| POST | `/api/game/score` | 提交一局积分（`run_id` 幂等，断网可补交） |
+| GET | `/api/game/leaderboard` | `limit`、`user_id`；返回榜单与我的排名 |
+
+用户 ID 来源：服务端配置 `WX_APPID` / `WX_APPSECRET` 后为微信 openid（`wx_` 前缀），
+未配置时客户端退化为本地 ID，游戏功能不受影响。
+
+上线前需要：
+
+1. 启用 HTTPS（`make cert` 后打开 `infra/nginx/conf.d/site.conf` 的 HTTPS 段并 `make restart`），
+   微信小游戏只允许 https 请求；
+2. 小游戏后台「开发设置 → 服务器域名 → request 合法域名」加入 `https://zrh.asia`；
+3. `docker-compose.yml` 填写 `WX_APPID` / `WX_APPSECRET`；
+4. 微信开发者工具导入 `minigame/`，替换 `project.config.json` 中的 `appid`。
+
+详细说明见 `minigame/README.md`。
+
+## 8) 运维命令
 
 ```bash
 make up      # 构建并启动
@@ -117,7 +161,7 @@ make restart # 重启容器
 make logs    # 查看日志
 ```
 
-## 8) 原始桌面版运行（可选）
+## 9) 原始桌面版运行（可选）
 
 如果要运行原始 pygame 版本：
 
